@@ -1,5 +1,5 @@
 # Interactive Multi-Agent Parallel Pathfinding Simulator (IMAPPS)
-An interactive multi-agent pathfinding simulator in Python using Pygame and multi-processing modules for parallel A * path computations and optimizations. 
+An interactive multi-agent pathfinding simulator in Python using Pygame, and multi-processing modules for parallel A* path computations and optimizations. 
 
 ## Key Features:
 - Agents can move freely in 2D space.
