@@ -1,111 +1,20 @@
+
 import pygame
-import heapq
 import time
 import multiprocessing
+from config import *
+from node import Node
+from astar import a_star
+from multiprocessing_worker import compute_best_path
 
-CLOCK_RATE = 60
-WIDTH, HEIGHT = 600, 650  # Extra 50 px for names
-GRID_SIZE = 20
-CELL_SIZE = WIDTH // GRID_SIZE
-MOVE_DELAY = 10
-move_counter = 0
-
-WHITE, BLACK, BLUE, GREEN, RED = (255,255,255), (0,0,0), (0,0,255), (0,255,0), (255,0,0)
-
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("IMAPPS")
-clock = pygame.time.Clock()
-font = pygame.font.SysFont(None, 30)
-
-
-class Node:
-    def __init__(self, x, y):
-        self.x, self.y = x, y
-        self.parent, self.g, self.h = None, float('inf'), float('inf')
-        self.wall = False
-
-    def __lt__(self, other):
-        return (self.x, self.y) < (other.x, other.y)
-
-
-def heuristic(a, b):
-    return abs(a.x - b.x) + abs(a.y - b.y)
-
-
-def get_neighbors(node, grid):
-    dirs = [(0, 1), (1, 0), (-1, 0), (0, -1)]
-    neighbors = []
-    for dx, dy in dirs:
-        nx, ny = node.x + dx, node.y + dy
-        if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE:
-            neighbors.append(grid[nx][ny])
-    return neighbors
-
-
-def a_star(start, end, grid):
-    open_set = []
-    heapq.heappush(open_set, (0, start))
-    start.g, start.h = 0, heuristic(start, end)
-    closed_set = set()
-
-    while open_set:
-        _, current = heapq.heappop(open_set)
-        if current == end:
-            path = []
-            while current.parent:
-                path.append(current)
-                current = current.parent
-            return path[::-1]
-
-        closed_set.add(current)
-        for neighbor in get_neighbors(current, grid):
-            if neighbor.wall or neighbor in closed_set:
-                continue
-            tentative_g = current.g + 1
-            if tentative_g < neighbor.g:
-                neighbor.parent = current
-                neighbor.g, neighbor.h = tentative_g, heuristic(neighbor, end)
-                heapq.heappush(open_set, (neighbor.g + neighbor.h, neighbor))
-    return []
-
-
-def reset_nodes(grid):
-    for x in range(GRID_SIZE):
-        for y in range(GRID_SIZE):
-            grid[x][y].g, grid[x][y].h = float('inf'), float('inf')
-            grid[x][y].parent = None
-
-
-# Parallel worker function
-def compute_best_path(args):
-    agent_pos, goals, grid_data = args
+def run_simulation():
+    move_counter = 0
     grid = [[Node(x, y) for y in range(GRID_SIZE)] for x in range(GRID_SIZE)]
-    for x in range(GRID_SIZE):
-        for y in range(GRID_SIZE):
-            grid[x][y].wall = grid_data[x][y]
-
-    agent = grid[agent_pos[0]][agent_pos[1]]
-    best_path, min_len = None, float("inf")
-
-    for gx, gy in goals:
-        goal = grid[gx][gy]
-        reset_nodes(grid)
-        path = a_star(agent, goal, grid)
-        if path and len(path) < min_len:
-            best_path, min_len = path, len(path)
-
-    return (agent_pos, [(n.x, n.y) for n in best_path] if best_path else None)
-
-
-def main():
-    global move_counter
-    grid = [[Node(x, y) for y in range(GRID_SIZE)] for x in range(GRID_SIZE)]
-
     agents, goals = [], []
     paths = {}
     moving = False
     total_time_taken = None
+    wait_timer = {}
 
     running = True
     while running:
@@ -138,13 +47,13 @@ def main():
             text = font.render(f"Total Time: {total_time_taken:.2f} sec", True, (0, 0, 0))
             screen.blit(text, (10, 10))
 
-        # Display names below the grid
-        name1 = font.render("Anush Bundel 2023BCS0005", True, (0, 0, 0))
-        name2 = font.render("Ankush 2023BCS0131", True, (0, 0, 0))
+        # Names
+        name1 = font.render("Anush Bundel 2023BCS0005", True, BLACK)
+        name2 = font.render("Ankush 2023BCS0131", True, BLACK)
         screen.blit(name1, (10, HEIGHT - 45))
         screen.blit(name2, (10, HEIGHT - 25))
 
-        # Handle events
+        # --- Handle Input ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -158,13 +67,14 @@ def main():
             if pygame.mouse.get_pressed()[2]:
                 mx, my = pygame.mouse.get_pos()
                 gx, gy = mx // CELL_SIZE, my // CELL_SIZE
-                if gx < GRID_SIZE and gy < GRID_SIZE and grid[gx][gy] not in agents and not grid[gx][gy].wall:
+                if gx < GRID_SIZE and gy < GRID_SIZE and not grid[gx][gy].wall and grid[gx][gy] not in agents:
                     agents.append(grid[gx][gy])
+                    wait_timer[grid[gx][gy]] = 0
 
             if pygame.mouse.get_pressed()[1]:
                 mx, my = pygame.mouse.get_pos()
                 gx, gy = mx // CELL_SIZE, my // CELL_SIZE
-                if gx < GRID_SIZE and gy < GRID_SIZE and grid[gx][gy] not in goals and not grid[gx][gy].wall:
+                if gx < GRID_SIZE and gy < GRID_SIZE and not grid[gx][gy].wall and grid[gx][gy] not in goals:
                     goals.append(grid[gx][gy])
 
             if event.type == pygame.KEYDOWN:
@@ -176,7 +86,10 @@ def main():
 
                     start_time = time.time()
                     with multiprocessing.Pool() as pool:
-                        results = pool.map(compute_best_path, [(a, goals_data, grid_data) for a in agent_data])
+                        results = pool.map(
+                            compute_best_path,
+                            [(a, goals_data, grid_data, GRID_SIZE) for a in agent_data]
+                        )
 
                     for agent_pos, path_coords in results:
                         if path_coords:
@@ -187,35 +100,57 @@ def main():
                     total_time_taken = time.time() - start_time
                     moving = True
 
-                elif event.key == pygame.K_r:
+                if event.key == pygame.K_r:
                     agents.clear()
                     goals.clear()
                     paths.clear()
                     moving = False
                     total_time_taken = None
+                    wait_timer.clear()
 
-        # Update agent movement
+        # --- Movement ---
+        MAX_WAIT = 10
         if moving:
             move_counter += 1
             if move_counter >= MOVE_DELAY:
                 new_paths = {}
+                occupied = {(a.x, a.y) for a in agents}
+                reserved = set()
+
                 for agent, path in list(paths.items()):
-                    if path:
-                        new_pos = path.pop(0)
-                        agents[agents.index(agent)] = new_pos
+                    if not path:
+                        wait_timer[agent] = 0
+                        continue
+
+                    next_node = path[0]
+                    next_pos = (next_node.x, next_node.y)
+
+                    if next_pos not in occupied and next_pos not in reserved:
+                        reserved.add(next_pos)
+                        occupied.remove((agent.x, agent.y))
+                        occupied.add(next_pos)
+                        agents[agents.index(agent)] = next_node
+                        path.pop(0)
+                        wait_timer[next_node] = 0
                         if path:
-                            new_paths[new_pos] = path
+                            new_paths[next_node] = path
+                    else:
+                        wait_timer[agent] = wait_timer.get(agent, 0) + 1
+                        if wait_timer[agent] >= MAX_WAIT:
+                            wait_timer[agent] = 0
+                            start = agent
+                            goal = path[-1]
+                            new_path = a_star(grid, start, goal, GRID_SIZE)
+                            new_paths[agent] = new_path if new_path else path
+                        else:
+                            new_paths[agent] = path
+
                 paths = new_paths
                 move_counter = 0
-            if not paths:
+            if not any(paths.values()):
                 moving = False
 
         pygame.display.flip()
         clock.tick(CLOCK_RATE)
 
     pygame.quit()
-
-
-if __name__ == "__main__":
-    multiprocessing.freeze_support()
-    main()
