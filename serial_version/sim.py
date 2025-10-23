@@ -7,13 +7,14 @@ from node import Node
 
 def simulate():
     move_counter = 0
-    grid = [[Node(x, y) for y in range(GRID_SIZE)] for x in range(GRID_SIZE)]
+    grid = [[Node(x, y) for y in range(GRID_SIZE_Y)] for x in range(GRID_SIZE_X)]
 
     agents, goals = [], []
     paths = {}
     moving = False
     total_time_taken = None
     wait_timer = {}
+    wall_mode = False
 
     running = True
     while running:
@@ -26,16 +27,19 @@ def simulate():
             if event.type == pygame.QUIT:
                 running = False
 
-            if pygame.mouse.get_pressed()[0]:  # Toggle wall
+            if pygame.mouse.get_pressed()[0]:  # Place/Remove walls
                 mx, my = pygame.mouse.get_pos()
-                gx, gy = mx // CELL_SIZE, my // CELL_SIZE
-                if gx < GRID_SIZE and gy < GRID_SIZE:
-                    grid[gx][gy].wall = not grid[gx][gy].wall
+                gx, gy = mx // CELL_SIZE_X, my // CELL_SIZE_Y
+                if gx < GRID_SIZE_X and gy < GRID_SIZE_Y:
+                    if wall_mode:
+                        grid[gx][gy].wall = True
+                    else:
+                        grid[gx][gy].wall = False
 
             if pygame.mouse.get_pressed()[2]:  # Add agent
                 mx, my = pygame.mouse.get_pos()
-                gx, gy = mx // CELL_SIZE, my // CELL_SIZE
-                if gx < GRID_SIZE and gy < GRID_SIZE and not grid[gx][gy].wall:
+                gx, gy = mx // CELL_SIZE_X, my // CELL_SIZE_Y
+                if gx < GRID_SIZE_X and gy < GRID_SIZE_Y and not grid[gx][gy].wall:
                     node = grid[gx][gy]
                     if node not in agents:
                         agents.append(node)
@@ -43,15 +47,14 @@ def simulate():
 
             if pygame.mouse.get_pressed()[1]:  # Add goal
                 mx, my = pygame.mouse.get_pos()
-                gx, gy = mx // CELL_SIZE, my // CELL_SIZE
-                if gx < GRID_SIZE and gy < GRID_SIZE and not grid[gx][gy].wall:
+                gx, gy = mx // CELL_SIZE_X, my // CELL_SIZE_Y
+                if gx < GRID_SIZE_X and gy < GRID_SIZE_Y and not grid[gx][gy].wall:
                     node = grid[gx][gy]
                     if node not in goals:
                         goals.append(node)
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    # SERIAL PATH COMPUTATION
                     paths.clear()
                     start_time = time.time()
                     for agent in agents:
@@ -65,6 +68,9 @@ def simulate():
                             paths[agent] = best_path
                     total_time_taken = time.time() - start_time
                     moving = True
+
+                elif event.key == pygame.K_t:
+                    wall_mode = not wall_mode
 
                 elif event.key == pygame.K_r:
                     agents.clear()

@@ -1,5 +1,5 @@
 import heapq
-from config import GRID_SIZE
+from config import GRID_SIZE_X, GRID_SIZE_Y
 
 def heuristic(a, b):
     return abs(a.x - b.x) + abs(a.y - b.y)
@@ -9,13 +9,13 @@ def get_neighbors(node, grid):
     neighbors = []
     for dx, dy in dirs:
         nx, ny = node.x + dx, node.y + dy
-        if 0 <= nx < GRID_SIZE and 0 <= ny < GRID_SIZE:
+        if 0 <= nx < GRID_SIZE_X and 0 <= ny < GRID_SIZE_Y:
             neighbors.append(grid[nx][ny])
     return neighbors
 
 def reset_nodes(grid):
-    for x in range(GRID_SIZE):
-        for y in range(GRID_SIZE):
+    for x in range(GRID_SIZE_X):
+        for y in range(GRID_SIZE_Y):
             grid[x][y].g = grid[x][y].h = float('inf')
             grid[x][y].parent = None
 
