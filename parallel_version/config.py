@@ -1,11 +1,16 @@
-
 import pygame
+from pygame._sdl2 import Window
 
+# Timing
 CLOCK_RATE = 60
-WIDTH, HEIGHT = 600, 650
-GRID_SIZE = 20
-CELL_SIZE = WIDTH // GRID_SIZE
 MOVE_DELAY = 10
+
+# Grid
+WIDTH, HEIGHT = 1600, 720
+GRID_SIZE_X = 60
+GRID_SIZE_Y = 30
+CELL_SIZE_X = WIDTH // GRID_SIZE_X
+CELL_SIZE_Y = HEIGHT // GRID_SIZE_Y
 
 # Colors
 WHITE = (255, 255, 255)
@@ -13,9 +18,15 @@ BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
+GRAY = (128, 128, 128)
 
+# Pygame init
 pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("IMAPPS")
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+Window.from_display_module().maximize()
+pygame.display.set_caption("Interactive Multi-Agent Parallelized Pathfinding Simulator")
 clock = pygame.time.Clock()
-font = pygame.font.SysFont(None, 30)
+font_small = pygame.font.SysFont("Segoe UI", 24)
+font_medium = pygame.font.SysFont("Segoe UI", 30, bold=True)
+font_large = pygame.font.SysFont("Segoe UI", 40, bold=True)
