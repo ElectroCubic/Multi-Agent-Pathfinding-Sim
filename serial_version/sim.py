@@ -9,63 +9,84 @@ def simulate():
     move_counter = 0
     grid = [[Node(x, y) for y in range(GRID_SIZE_Y)] for x in range(GRID_SIZE_X)]
 
-    agents, goals = [], []
-    paths = {}
+    # Agents are dicts: {"pos": (x,y), "path": [Node,...] or None, "wait": int}
+    agents = []
+    goals = []
     moving = False
     total_time_taken = None
-    wait_timer = {}
     wall_mode = False
+
+    MAX_WAIT = 10  # ticks before path recalculation
 
     running = True
     while running:
         screen.fill(WHITE)
         draw_grid(screen, grid)
-        draw_elements(screen, agents, goals, paths)
-        draw_text(screen, total_time_taken)
+        draw_elements(screen, agents, goals)
+        draw_text(screen, total_time_taken, wall_mode)
 
+        # --- Input handling ---
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-            if pygame.mouse.get_pressed()[0]:  # Place/Remove walls
+            # Mouse: place walls, add agents, add goals
+            if pygame.mouse.get_pressed()[0]:
                 mx, my = pygame.mouse.get_pos()
                 gx, gy = mx // CELL_SIZE_X, my // CELL_SIZE_Y
-                if gx < GRID_SIZE_X and gy < GRID_SIZE_Y:
-                    if wall_mode:
-                        grid[gx][gy].wall = True
-                    else:
-                        grid[gx][gy].wall = False
+                if 0 <= gx < GRID_SIZE_X and 0 <= gy < GRID_SIZE_Y:
+                    grid[gx][gy].wall = wall_mode
 
-            if pygame.mouse.get_pressed()[2]:  # Add agent
+            if pygame.mouse.get_pressed()[2]:
                 mx, my = pygame.mouse.get_pos()
                 gx, gy = mx // CELL_SIZE_X, my // CELL_SIZE_Y
-                if gx < GRID_SIZE_X and gy < GRID_SIZE_Y and not grid[gx][gy].wall:
-                    node = grid[gx][gy]
-                    if node not in agents:
-                        agents.append(node)
-                        wait_timer[node] = 0
+                if 0 <= gx < GRID_SIZE_X and 0 <= gy < GRID_SIZE_Y and not grid[gx][gy].wall:
+                    if (gx, gy) not in {a["pos"] for a in agents}:
+                        agents.append({"pos": (gx, gy), "path": None, "wait": 0})
 
-            if pygame.mouse.get_pressed()[1]:  # Add goal
+            if pygame.mouse.get_pressed()[1]:
                 mx, my = pygame.mouse.get_pos()
                 gx, gy = mx // CELL_SIZE_X, my // CELL_SIZE_Y
-                if gx < GRID_SIZE_X and gy < GRID_SIZE_Y and not grid[gx][gy].wall:
+                if 0 <= gx < GRID_SIZE_X and 0 <= gy < GRID_SIZE_Y and not grid[gx][gy].wall:
                     node = grid[gx][gy]
                     if node not in goals:
                         goals.append(node)
 
+            # Keyboard: start simulation, toggle wall mode, reset
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    paths.clear()
                     start_time = time.time()
+                    assigned_goals = set()
+
+                    # Reset agents' paths and wait counters
                     for agent in agents:
-                        best_path, min_len = None, float("inf")
+                        agent["path"] = None
+                        agent["wait"] = 0
+
+                    # Assign unique goals
+                    for agent in agents:
+                        best_goal = None
+                        best_path = None
+                        min_len = float("inf")
+                        sx, sy = agent["pos"]
+                        start_node = grid[sx][sy]
+
                         for goal in goals:
+                            if goal in assigned_goals:
+                                continue
                             reset_nodes(grid)
-                            path = a_star(agent, goal, grid)
+                            path = a_star(start_node, goal, grid)
                             if path and len(path) < min_len:
-                                best_path, min_len = path, len(path)
+                                best_goal = goal
+                                best_path = path
+                                min_len = len(path)
+
                         if best_path:
-                            paths[agent] = best_path
+                            agent["path"] = best_path[:]  # copy
+                            assigned_goals.add(best_goal)
+                        else:
+                            agent["path"] = None
+
                     total_time_taken = time.time() - start_time
                     moving = True
 
@@ -75,54 +96,76 @@ def simulate():
                 elif event.key == pygame.K_r:
                     agents.clear()
                     goals.clear()
-                    paths.clear()
-                    wait_timer.clear()
                     moving = False
                     total_time_taken = None
 
-        # --- COLLISION AVOIDANCE ---
-        MAX_WAIT = 10
+        # --- Movement logic ---
         if moving:
             move_counter += 1
             if move_counter >= MOVE_DELAY:
-                occupied = {(a.x, a.y) for a in agents}
-                reserved = set()
-                new_paths = {}
+                occupied = {tuple(agent["pos"]) for agent in agents}
+                intentions = {}
 
-                for agent, path in list(paths.items()):
-                    if not path:
-                        wait_timer[agent] = 0
+                # Determine next intended positions
+                for agent in agents:
+                    path = agent.get("path")
+                    if path and len(path) > 0:
+                        intentions[id(agent)] = (path[0].x, path[0].y)
+                    else:
+                        intentions[id(agent)] = agent["pos"]
+
+                reserved = set()
+
+                for agent in agents:
+                    pos = agent["pos"]
+                    path = agent.get("path")
+                    current_pos = tuple(pos)
+
+                    if not path or len(path) == 0:
+                        agent["path"] = None
+                        agent["wait"] = 0
+                        reserved.add(current_pos)
                         continue
 
-                    next_node = path[0]
-                    next_pos = (next_node.x, next_node.y)
+                    next_pos = (path[0].x, path[0].y)
 
-                    # Check if space is free
-                    if next_pos not in occupied and next_pos not in reserved:
-                        reserved.add(next_pos)
-                        occupied.remove((agent.x, agent.y))
-                        occupied.add(next_pos)
+                    # Swap detection
+                    swap_conflict = False
+                    for other in agents:
+                        if other is agent:
+                            continue
+                        if intentions.get(id(other)) == current_pos and other["pos"] == next_pos:
+                            swap_conflict = True
+                            break
 
-                        agents[agents.index(agent)] = next_node
-                        path.pop(0)
-                        wait_timer[next_node] = 0
-                        if path:
-                            new_paths[next_node] = path
-                    else:
-                        wait_timer[agent] = wait_timer.get(agent, 0) + 1
-                        if wait_timer[agent] >= MAX_WAIT:
-                            wait_timer[agent] = 0
-                            start = agent
-                            goal = path[-1]
-                            new_path = a_star(start, goal, grid)
-                            new_paths[agent] = new_path if new_path else path
-                        else:
-                            new_paths[agent] = path
+                    occupied_block = next_pos in occupied and next_pos not in {intentions[id(a)] for a in agents if a is not agent}
+                    if next_pos in reserved or occupied_block or swap_conflict:
+                        agent["wait"] += 1
+                        if agent["wait"] >= MAX_WAIT:
+                            agent["wait"] = 0
+                            start_node = grid[current_pos[0]][current_pos[1]]
+                            goal_node = path[-1]
+                            reset_nodes(grid)
+                            new_path = a_star(start_node, goal_node, grid)
+                            if new_path:
+                                agent["path"] = new_path[:]
+                        reserved.add(current_pos)
+                        continue
 
-                paths = new_paths
+                    # Move agent
+                    reserved.add(next_pos)
+                    occupied.discard(current_pos)
+                    occupied.add(next_pos)
+                    agent["pos"] = next_pos
+                    agent["wait"] = 0
+                    path.pop(0)
+                    if len(path) == 0:
+                        agent["path"] = None
+
                 move_counter = 0
 
-            if not any(paths.values()):
+            # Stop moving when all agents done
+            if all(a.get("path") is None for a in agents):
                 moving = False
 
         pygame.display.flip()

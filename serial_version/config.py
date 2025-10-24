@@ -14,10 +14,10 @@ BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+YELLOW = (255, 255, 0)
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-screen_rect_center = screen.get_rect().center
 Window.from_display_module().maximize()
 pygame.display.set_caption("Interactive Multi Agent Parallelized Pathfinding Simulator")
 clock = pygame.time.Clock()
