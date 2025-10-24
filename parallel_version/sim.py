@@ -1,6 +1,5 @@
 import time
 import multiprocessing
-import pygame
 from config import *
 from node import Node
 from astar import a_star, reset_nodes
@@ -55,34 +54,35 @@ def run_simulation():
             # Keyboard inputs
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE and agents and goals:
-                    # Prepare data for multiprocessing
                     grid_data = [[grid[x][y].wall for y in range(GRID_SIZE_Y)] for x in range(GRID_SIZE_X)]
                     goals_data = [(g.x, g.y) for g in goals]
-                    agent_data = [(a["node"].x, a["node"].y) for a in agents]
+                    reached_goals = {(g.x, g.y) for g in goals if any(a["pos"] == (g.x, g.y) for a in agents)}
+
+                    agent_data_to_calc = [
+                        (a["node"].x, a["node"].y)
+                        for a in agents
+                        if a["pos"] not in reached_goals
+                    ]
 
                     start_time = time.time()
-                    with multiprocessing.Pool() as pool:
-                        results = pool.map(
-                            compute_best_path,
-                            [(a, goals_data, grid_data, GRID_SIZE_X, GRID_SIZE_Y) for a in agent_data]
-                        )
 
-                    # Assign unique goals after multiprocessing
-                    assigned_goals = set()
-                    for agent_pos, chosen_goal, path_coords in results:
-                        if path_coords:
-                            # Skip if goal already taken
-                            if chosen_goal in assigned_goals:
-                                path_coords = None
-                            else:
-                                assigned_goals.add(chosen_goal)
+                    if agent_data_to_calc:
+                        # Reuse the persistent grid for multiprocessing
+                        with multiprocessing.Pool() as pool:
+                            results = pool.map(
+                                compute_best_path,
+                                [(a, goals_data, grid, GRID_SIZE_X, GRID_SIZE_Y, reached_goals)
+                                for a in agent_data_to_calc]
+                            )
 
-                            path_nodes = [grid[x][y] for (x, y) in path_coords] if path_coords else None
-                            for a in agents:
-                                if a["pos"] == agent_pos:
-                                    a["path"] = path_nodes
-                                    break
-
+                        for agent_pos, path_coords in results:
+                            if path_coords:
+                                agent_node = grid[agent_pos[0]][agent_pos[1]]
+                                path_nodes = [grid[x][y] for (x, y) in path_coords]
+                                for a in agents:
+                                    if a["pos"] == (agent_node.x, agent_node.y):
+                                        a["path"] = path_nodes
+                                        break
 
                     total_time_taken = time.time() - start_time
                     moving = True
@@ -102,6 +102,7 @@ def run_simulation():
             if move_counter >= MOVE_DELAY:
                 occupied = {tuple(a["pos"]) for a in agents}
                 reserved = set()
+                reached_goals = {(g.x, g.y) for g in goals if any(a["pos"] == (g.x, g.y) for a in agents)}
 
                 for a in agents:
                     path = a.get("path")
@@ -113,40 +114,54 @@ def run_simulation():
                         reserved.add(current_pos)
                         continue
 
-                    next_node = path[0]
-                    next_pos = (next_node.x, next_node.y)
+                    next_pos = (path[0].x, path[0].y)
 
-                    # Swap / collision detection
-                    swap_conflict = False
-                    for other in agents:
-                        if other is a:
-                            continue
-                        other_path = other.get("path")
-                        other_next = (other_path[0].x, other_path[0].y) if other_path and len(other_path) > 0 else other["pos"]
-                        if other_next == current_pos and other["pos"] == next_pos:
-                            swap_conflict = True
-                            break
+                    # Detect swap/collision
+                    swap_conflict = any(
+                        other is not a and
+                        other.get("path") and
+                        len(other["path"]) > 0 and
+                        other["path"][0].x == current_pos[0] and
+                        other["path"][0].y == current_pos[1] and
+                        other["pos"] == next_pos
+                        for other in agents
+                    )
 
-                    occupied_block = next_pos in occupied and next_pos not in reserved
-                    if next_pos in reserved or occupied_block or swap_conflict:
+                    # If blocked by anything
+                    if next_pos in reserved or next_pos in occupied or next_pos in reached_goals or swap_conflict:
                         a["wait"] += 1
                         if a["wait"] >= MAX_WAIT:
-                            a["wait"] = 0
+                            # Recalculate path to a completely new goal
                             start_node = grid[current_pos[0]][current_pos[1]]
-                            goal_node = path[-1]
-                            reset_nodes(grid, GRID_SIZE_X, GRID_SIZE_Y)
-                            new_path = a_star(grid, start_node, goal_node, GRID_SIZE_X, GRID_SIZE_Y)
-                            if new_path:
-                                a["path"] = new_path
+
+                            # Build a temporary grid copy
+                            temp_grid = [[Node(x, y) for y in range(GRID_SIZE_Y)] for x in range(GRID_SIZE_X)]
+                            for x in range(GRID_SIZE_X):
+                                for y in range(GRID_SIZE_Y):
+                                    temp_grid[x][y].wall = grid[x][y].wall or (x, y) in occupied or (x, y) in reached_goals
+
+                            free_goals = [g for g in goals if (g.x, g.y) not in reached_goals]
+                            new_best = None
+                            min_len = float('inf')
+                            for g in free_goals:
+                                reset_nodes(temp_grid, GRID_SIZE_X, GRID_SIZE_Y)
+                                path = a_star(temp_grid, temp_grid[current_pos[0]][current_pos[1]],
+                                              temp_grid[g.x][g.y], GRID_SIZE_X, GRID_SIZE_Y)
+                                if path and len(path) < min_len:
+                                    new_best = path
+                                    min_len = len(path)
+
+                            a["path"] = new_best
+                            a["wait"] = 0
                         reserved.add(current_pos)
                         continue
 
-                    # Move agent
+                    # Normal move
                     reserved.add(next_pos)
                     occupied.discard(current_pos)
                     occupied.add(next_pos)
                     a["pos"] = next_pos
-                    a["node"] = next_node
+                    a["node"] = path[0]
                     a["wait"] = 0
                     path.pop(0)
                     if len(path) == 0:
@@ -154,7 +169,6 @@ def run_simulation():
 
                 move_counter = 0
 
-            # Stop moving when all agents done
             if all(a.get("path") is None for a in agents):
                 moving = False
 
