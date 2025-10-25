@@ -1,47 +1,67 @@
+# astar.py
 import heapq
-from node import Node
 
 def heuristic(a, b):
-    return abs(a.x - b.x) + abs(a.y - b.y)
+    # Manhattan
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-def get_neighbors(node, grid, grid_size_x, grid_size_y):
-    dirs = [(0, 1), (1, 0), (-1, 0), (0, -1)]
-    neighbors = []
-    for dx, dy in dirs:
-        nx, ny = node.x + dx, node.y + dy
-        if 0 <= nx < grid_size_x and 0 <= ny < grid_size_y:
-            neighbors.append(grid[nx][ny])
-    return neighbors
+def fast_astar(walls, start, goal, grid_w, grid_h):
+    """
+    walls: 2D array-like truthy for blocked cells. Indexing: walls[x][y]
+    start/goal: (x, y)
+    returns: list of (x,y) from start's next step ... goal (does NOT include start)
+    """
+    # quick checks
+    if start == goal:
+        return []
 
-def reset_nodes(grid, grid_size_x, grid_size_y):
-    for x in range(grid_size_x):
-        for y in range(grid_size_y):
-            n = grid[x][y]
-            n.g, n.h = float('inf'), float('inf')
-            n.parent = None
+    sx, sy = start
+    gx, gy = goal
+    if walls[gx][gy] or walls[sx][sy]:
+        return []
 
-def a_star(grid, start, end, grid_size_x, grid_size_y):
-    open_set = []
-    heapq.heappush(open_set, (0, start))
-    start.g, start.h = 0, heuristic(start, end)
-    closed_set = set()
+    open_heap = []
+    gscore = {start: 0}
+    fscore = {start: heuristic(start, goal)}
+    heapq.heappush(open_heap, (fscore[start], start))
+    came_from = {}
 
-    while open_set:
-        _, current = heapq.heappop(open_set)
-        if current == end:
+    closed = set()
+
+    # neighbors: 4-connected
+    while open_heap:
+        _, current = heapq.heappop(open_heap)
+        if current in closed:
+            continue
+        if current == goal:
+            # reconstruct (exclude start)
             path = []
-            while current.parent:
-                path.append(current)
-                current = current.parent
-            return path[::-1]
+            cur = current
+            while cur in came_from:
+                path.append(cur)
+                cur = came_from[cur]
+            path.reverse()
+            return path  # list of (x,y)
 
-        closed_set.add(current)
-        for neighbor in get_neighbors(current, grid, grid_size_x, grid_size_y):
-            if neighbor.wall or neighbor in closed_set:
+        closed.add(current)
+        cx, cy = current
+        for dx, dy in ((0,1),(1,0),(-1,0),(0,-1)):
+            nx, ny = cx + dx, cy + dy
+            if not (0 <= nx < grid_w and 0 <= ny < grid_h):
                 continue
-            tentative_g = current.g + 1
-            if tentative_g < neighbor.g:
-                neighbor.parent = current
-                neighbor.g, neighbor.h = tentative_g, heuristic(neighbor, end)
-                heapq.heappush(open_set, (neighbor.g + neighbor.h, neighbor))
-    return []
+            if walls[nx][ny]:
+                continue
+            neigh = (nx, ny)
+            tentative_g = gscore[current] + 1
+            if tentative_g < gscore.get(neigh, float('inf')):
+                came_from[neigh] = current
+                gscore[neigh] = tentative_g
+                f = tentative_g + heuristic(neigh, goal)
+                heapq.heappush(open_heap, (f, neigh))
+
+    return []  # no path found
+
+# keep these for compatibility in other parts of project that expect them
+def reset_nodes(grid, grid_size_x=None, grid_size_y=None):
+    # noop for fast path usage; preserved for legacy code that might call it.
+    return

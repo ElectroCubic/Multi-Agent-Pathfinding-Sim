@@ -1,40 +1,75 @@
-from node import Node
-from astar import a_star, reset_nodes
+# multiprocessing_worker.py
+import numpy as np
+from multiprocessing import shared_memory
+from astar import fast_astar
+
+# module-level reference to shared walls (NumPy view) created by init_worker
+_WALLS = None
+_SHM = None
+
+def init_worker(shm_name, shape):
+    """
+    Called once per worker on start. Attaches to shared memory buffer
+    created by the main process and builds a numpy view on it.
+    shm_name: name of SharedMemory block
+    shape: (grid_w, grid_h)
+    """
+    global _WALLS, _SHM
+    _SHM = shared_memory.SharedMemory(name=shm_name)
+    # walls stored as uint8 (0/1) in shared memory
+    grid_w, grid_h = shape
+    arr = np.ndarray((grid_w, grid_h), dtype=np.uint8, buffer=_SHM.buf)
+    # Use a boolean view for convenience
+    _WALLS = arr.view(dtype=np.uint8)
 
 def compute_best_path(args):
     """
-    args = (agent_pos, goals_list, grid, grid_size_x, grid_size_y, reached_goals)
-    agent_pos: (x, y)
-    goals_list: [(x1, y1), ...]
-    grid: pre-built Node grid (persistent)
-    reached_goals: set of (x,y) that should be treated as walls
+    args:
+      - agent_batch: list of (ax, ay) tuples
+      - goals: list of (gx, gy)
+      - grid_w, grid_h: ints
+      - reached_goals: set of (x,y) that should be treated as walls for planning
+    returns:
+      list of (agent_pos, path_tuples or None)
     """
-    agent_pos, goals, grid, grid_size_x, grid_size_y, reached_goals = args
+    agent_batch, goals, grid_w, grid_h, reached_goals = args
 
-    start_node = grid[agent_pos[0]][agent_pos[1]]
+    results = []
+    # make a local boolean copy once per batch and apply reached_goals
+    base_walls = _WALLS.astype(bool, copy=True)
 
-    best_path = None
-    min_len = float('inf')
-    for gx, gy in goals:
-        if (gx, gy) in reached_goals:
-            continue  # skip goals that are already taken
+    # mark reached goals as walls in the local copy
+    if reached_goals:
+        for (rx, ry) in reached_goals:
+            if 0 <= rx < grid_w and 0 <= ry < grid_h:
+                base_walls[rx][ry] = True
 
-        goal_node = grid[gx][gy]
+    # For each agent in batch, find best goal (closest reachable)
+    for agent_pos in agent_batch:
+        best_path = None
+        best_len = float('inf')
+        ax, ay = agent_pos
+        # if agent starts on a reached goal (shouldn't happen due to filtering) -> skip
+        if base_walls[ax][ay]:
+            results.append((agent_pos, None))
+            continue
 
-        # Mark reached goals as temp walls
-        for x, y in reached_goals:
-            grid[x][y].temp_wall = True
+        # sort goals by manhattan distance to prefer closest first (fast heuristic)
+        # but still run fast_astar until one yields a path; keep minimal-length path across all.
+        sorted_goals = sorted(goals, key=lambda g: abs(g[0]-ax) + abs(g[1]-ay))
+        for gx, gy in sorted_goals:
+            if (gx, gy) in reached_goals:
+                continue
+            # call fast_astar on boolean grid view
+            path = fast_astar(base_walls, (ax, ay), (gx, gy), grid_w, grid_h)
+            if path:
+                if len(path) < best_len:
+                    best_len = len(path)
+                    best_path = path
+                # since we sorted by distance we can break early if path length == manhattan
+                if best_len == abs(gx-ax) + abs(gy-ay):
+                    break
 
-        reset_nodes(grid, grid_size_x, grid_size_y)
-        path = a_star(grid, start_node, goal_node, grid_size_x, grid_size_y)
+        results.append((agent_pos, best_path if best_path else None))
 
-        # Clear temp walls
-        for x, y in reached_goals:
-            grid[x][y].temp_wall = False
-
-        if path and len(path) < min_len:
-            best_path = path
-            min_len = len(path)
-
-    path_tuples = [(n.x, n.y) for n in best_path] if best_path else None
-    return agent_pos, path_tuples
+    return results
