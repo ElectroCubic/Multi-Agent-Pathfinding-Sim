@@ -1,9 +1,8 @@
 # multiprocessing_worker.py
 import numpy as np
 from multiprocessing import shared_memory
-from astar import fast_astar
+from astar import astar
 
-# module-level reference to shared walls (NumPy view) created by init_worker
 _WALLS = None
 _SHM = None
 
@@ -44,29 +43,27 @@ def compute_best_path(args):
             if 0 <= rx < grid_w and 0 <= ry < grid_h:
                 base_walls[rx][ry] = True
 
-    # For each agent in batch, find best goal (closest reachable)
+    # For each agent in batch, find best goal
     for agent_pos in agent_batch:
         best_path = None
         best_len = float('inf')
         ax, ay = agent_pos
-        # if agent starts on a reached goal (shouldn't happen due to filtering) -> skip
+
         if base_walls[ax][ay]:
             results.append((agent_pos, None))
             continue
 
-        # sort goals by manhattan distance to prefer closest first (fast heuristic)
-        # but still run fast_astar until one yields a path; keep minimal-length path across all.
         sorted_goals = sorted(goals, key=lambda g: abs(g[0]-ax) + abs(g[1]-ay))
         for gx, gy in sorted_goals:
             if (gx, gy) in reached_goals:
                 continue
-            # call fast_astar on boolean grid view
-            path = fast_astar(base_walls, (ax, ay), (gx, gy), grid_w, grid_h)
+
+            path = astar(base_walls, (ax, ay), (gx, gy), grid_w, grid_h)
             if path:
                 if len(path) < best_len:
                     best_len = len(path)
                     best_path = path
-                # since we sorted by distance we can break early if path length == manhattan
+
                 if best_len == abs(gx-ax) + abs(gy-ay):
                     break
 

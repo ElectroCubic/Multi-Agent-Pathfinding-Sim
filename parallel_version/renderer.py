@@ -37,7 +37,7 @@ def draw_elements(screen, agents, goals):
             color = RED
         pygame.draw.rect(screen, color, pygame.Rect(px * CELL_SIZE_X, py * CELL_SIZE_Y, CELL_SIZE_X, CELL_SIZE_Y))
 
-def draw_text(screen, total_time_taken, wall_mode):
+def draw_text(screen, total_time_taken, wall_mode, font_small, font_medium):
     if total_time_taken is not None:
         t = font_medium.render(f"Total Time: {total_time_taken:.5f} sec", True, BLACK)
         screen.blit(t, (10, HEIGHT + 10))

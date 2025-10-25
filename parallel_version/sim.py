@@ -1,16 +1,14 @@
-# sim.py
 import time
 import multiprocessing
 from multiprocessing import shared_memory
 import numpy as np
-
 from config import *
 from node import Node
-from astar import fast_astar
+from astar import astar
 from renderer import draw_grid, draw_elements, draw_text
 from multiprocessing_worker import compute_best_path, init_worker
 
-# batch size for each worker task (tune empirically)
+# batch size for each worker task
 BATCH_SIZE = 4
 
 def _build_wall_map(grid):
@@ -28,16 +26,27 @@ def _write_to_shm(shm, arr):
     np.copyto(buf, arr)
 
 def run_simulation():
-    # build persistent Node grid (used by renderer + for mapping paths to Node objects)
+    import pygame
+    from pygame._sdl2 import Window
+
+    # Pygame init
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+    Window.from_display_module().maximize()
+    pygame.display.set_caption("Interactive Multi-Agent Parallelized Pathfinding Simulator")
+    clock = pygame.time.Clock()
+    font_s = pygame.font.SysFont("Segoe UI", 24)
+    font_m = pygame.font.SysFont("Segoe UI", 30, bold=True)
+
+    # build persistent Node grid
     grid = [[Node(x, y) for y in range(GRID_SIZE_Y)] for x in range(GRID_SIZE_X)]
 
-    # backing arrays
     agents = []
     goals = []
     moving = False
     wall_mode = False
     total_time_taken = 0.0
-    MAX_WAIT = 6  # tune: lower gives more replans, higher gives more waiting
+    MAX_WAIT = 6
 
     # initial wall map and shared memory
     wall_map = _build_wall_map(grid)  # uint8
@@ -54,7 +63,6 @@ def run_simulation():
 
     try:
         move_counter = 0
-        clock_tick = 0
 
         running = True
         while running:
@@ -62,7 +70,7 @@ def run_simulation():
             screen.fill(WHITE)
             draw_grid(screen, grid)
             draw_elements(screen, agents, goals)
-            draw_text(screen, total_time_taken, wall_mode)
+            draw_text(screen, total_time_taken, wall_mode, font_s, font_m)
 
             # event handling
             for event in pygame.event.get():
@@ -177,7 +185,7 @@ def run_simulation():
                         if next_pos in reserved or next_pos in occupied or next_pos in reached_goals or swap_conflict:
                             a["wait"] += 1
                             if a["wait"] >= MAX_WAIT:
-                                # dynamic replan to any free goal now (scrap old path)
+                                # dynamic replan to any free goal
                                 temp_walls = base_walls.copy()
                                 for ox, oy in (occupied | reached_goals):
                                     if 0 <= ox < GRID_SIZE_X and 0 <= oy < GRID_SIZE_Y:
@@ -188,7 +196,7 @@ def run_simulation():
                                 best_len = float('inf')
                                 sx, sy = current_pos
                                 for g in free_goals:
-                                    p = fast_astar(temp_walls, (sx, sy), (g.x, g.y), GRID_SIZE_X, GRID_SIZE_Y)
+                                    p = astar(temp_walls, (sx, sy), (g.x, g.y), GRID_SIZE_X, GRID_SIZE_Y)
                                     if p and len(p) < best_len:
                                         best = p
                                         best_len = len(p)
@@ -212,10 +220,6 @@ def run_simulation():
                         if len(path) == 0:
                             a["path"] = None
 
-                    # --- NEW: idle-agent replan pass ---
-                    # Try to assign a path to agents that are idle (path is None),
-                    # so they don't sit forever when goals free up later.
-                    # This is intentionally cheap and uses the same temp_walls logic.
                     free_goals = [g for g in goals if (g.x, g.y) not in reached_goals]
                     if free_goals:
                         # reuse base_walls we already computed
@@ -235,7 +239,7 @@ def run_simulation():
                                 best_len = float('inf')
                                 sorted_goals = sorted(free_goals, key=lambda g: abs(g.x - sx) + abs(g.y - sy))
                                 for g in sorted_goals:
-                                    p = fast_astar(temp_walls_for_replan, (sx, sy), (g.x, g.y), GRID_SIZE_X, GRID_SIZE_Y)
+                                    p = astar(temp_walls_for_replan, (sx, sy), (g.x, g.y), GRID_SIZE_X, GRID_SIZE_Y)
                                     if p and len(p) < best_len:
                                         best = p
                                         best_len = len(p)

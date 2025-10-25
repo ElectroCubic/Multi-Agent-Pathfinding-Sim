@@ -1,17 +1,15 @@
-# astar.py
+
 import heapq
 
 def heuristic(a, b):
-    # Manhattan
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-def fast_astar(walls, start, goal, grid_w, grid_h):
+def astar(walls, start, goal, grid_w, grid_h):
     """
     walls: 2D array-like truthy for blocked cells. Indexing: walls[x][y]
     start/goal: (x, y)
     returns: list of (x,y) from start's next step ... goal (does NOT include start)
     """
-    # quick checks
     if start == goal:
         return []
 
@@ -25,16 +23,13 @@ def fast_astar(walls, start, goal, grid_w, grid_h):
     fscore = {start: heuristic(start, goal)}
     heapq.heappush(open_heap, (fscore[start], start))
     came_from = {}
-
     closed = set()
 
-    # neighbors: 4-connected
     while open_heap:
         _, current = heapq.heappop(open_heap)
         if current in closed:
             continue
         if current == goal:
-            # reconstruct (exclude start)
             path = []
             cur = current
             while cur in came_from:
@@ -60,8 +55,3 @@ def fast_astar(walls, start, goal, grid_w, grid_h):
                 heapq.heappush(open_heap, (f, neigh))
 
     return []  # no path found
-
-# keep these for compatibility in other parts of project that expect them
-def reset_nodes(grid, grid_size_x=None, grid_size_y=None):
-    # noop for fast path usage; preserved for legacy code that might call it.
-    return

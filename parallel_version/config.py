@@ -1,5 +1,3 @@
-import pygame
-from pygame._sdl2 import Window
 
 # Timing
 CLOCK_RATE = 60
@@ -20,13 +18,3 @@ GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 GRAY = (128, 128, 128)
-
-# Pygame init
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-Window.from_display_module().maximize()
-pygame.display.set_caption("Interactive Multi-Agent Parallelized Pathfinding Simulator")
-clock = pygame.time.Clock()
-font_small = pygame.font.SysFont("Segoe UI", 24)
-font_medium = pygame.font.SysFont("Segoe UI", 30, bold=True)
-font_large = pygame.font.SysFont("Segoe UI", 40, bold=True)

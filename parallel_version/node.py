@@ -3,7 +3,7 @@ class Node:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.wall = False        # permanent wall
+        self.wall = False
         self.parent = None
         self.g = float('inf')
         self.h = float('inf')
