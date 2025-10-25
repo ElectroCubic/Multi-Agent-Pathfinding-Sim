@@ -38,26 +38,37 @@ def draw_elements(screen, agents, goals):
         rect = pygame.Rect(px * CELL_SIZE_X, py * CELL_SIZE_Y, CELL_SIZE_X, CELL_SIZE_Y)
         pygame.draw.rect(screen, color, rect)
 
-def draw_text(screen, total_time_taken, wall_mode):
+def draw_text(screen, total_time_taken, wall_mode, agents, goals):
     if total_time_taken is not None:
         text_surface = font_medium.render(f"Total Time: {total_time_taken:.7f} sec", True, BLACK)
-        screen.blit(text_surface, (10, HEIGHT + 10))
+        screen.blit(text_surface, (10, HEIGHT + 20))
 
     wall_text = f"[Left Click] Add Wall: {wall_mode}"
     wall_surface = font_small.render(wall_text, True, BLACK)
     toggle_surface = font_small.render("[T] Toggle Place/Remove", True, BLACK)
     name1 = font_small.render("Anush Bundel 2023BCS0005", True, BLACK)
     name2 = font_small.render("Ankush 2023BCS0131", True, BLACK)
-    run_info = font_small.render("[Space] Run Sim", True, BLACK)
-    reset_info = font_small.render("[R] Reset", True, BLACK)
-    agent_info = font_small.render("[Right Click] Add Agent", True, BLACK)
-    goal_info = font_small.render("[Middle Click] Add Goal", True, BLACK)
 
-    screen.blit(wall_surface, (WIDTH - 680, HEIGHT + 5))
-    screen.blit(toggle_surface, (WIDTH - 680, HEIGHT + 30))
+    num_agents = len(agents)
+    num_goals = len(goals)
+    moving_agents = sum(1 for a in agents if a.get("path"))
+    waiting_agents = sum(1 for a in agents if a.get("wait", 0) > 0)
+
+    stats_texts = [
+        f"Agents: {num_agents}",
+        f"Goals: {num_goals}",
+        f"Moving: {moving_agents}",
+        f"Waiting: {waiting_agents}"
+    ]
+
+    x_offset = WIDTH - 1210
+    y_offset = HEIGHT + 23
+    spacing = 130
+    for i, txt in enumerate(stats_texts):
+        stat_surface = font_small.render(txt, True, BLACK)
+        screen.blit(stat_surface, (x_offset + i*spacing, y_offset))
+
     screen.blit(name1, (WIDTH - 380, HEIGHT + 5))
     screen.blit(name2, (WIDTH - 380, HEIGHT + 30))
-    screen.blit(run_info, (WIDTH - 900, HEIGHT + 5))
-    screen.blit(reset_info, (WIDTH - 900, HEIGHT + 30))
-    screen.blit(agent_info, (WIDTH - 1200, HEIGHT + 5))
-    screen.blit(goal_info, (WIDTH - 1200, HEIGHT + 30))
+    screen.blit(wall_surface, (WIDTH - 680, HEIGHT + 5))
+    screen.blit(toggle_surface, (WIDTH - 680, HEIGHT + 30))

@@ -20,7 +20,7 @@ def _build_wall_map(grid):
     return arr
 
 def _write_to_shm(shm, arr):
-    """Write numpy uint8 arr into shared_memory buffer (same shape assumed)."""
+    """Write numpy uint8 arr into shared_memory buffer."""
     buf = np.ndarray(arr.shape, dtype=np.uint8, buffer=shm.buf)
     np.copyto(buf, arr)
 
@@ -28,14 +28,13 @@ def run_simulation():
     import pygame
     from pygame._sdl2 import Window
 
-    # Pygame init
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
     Window.from_display_module().maximize()
     pygame.display.set_caption("Interactive Multi-Agent Parallelized Pathfinding Simulator")
     clock = pygame.time.Clock()
-    font_s = pygame.font.SysFont("Segoe UI", 24)
-    font_m = pygame.font.SysFont("Segoe UI", 30, bold=True)
+    font_s = pygame.font.SysFont("Calibri", 26, bold=True)
+    font_m = pygame.font.SysFont("Calibri", 32, bold=True)
 
     # build persistent Node grid
     grid = [[Node(x, y) for y in range(GRID_SIZE_Y)] for x in range(GRID_SIZE_X)]
@@ -43,7 +42,7 @@ def run_simulation():
     agents = []
     goals = []
     moving = False
-    wall_mode = False
+    wall_mode = True
     total_time_taken = 0.0
     move_counter = 0
     MAX_WAIT = 2
@@ -63,11 +62,10 @@ def run_simulation():
 
     running = True
     while running:
-        # draw
         screen.fill(WHITE)
         draw_grid(screen, grid)
         draw_elements(screen, agents, goals)
-        draw_text(screen, total_time_taken, wall_mode, font_s, font_m)
+        draw_text(screen, total_time_taken, wall_mode, font_s, font_m, agents, goals)
 
         # event handling
         for event in pygame.event.get():

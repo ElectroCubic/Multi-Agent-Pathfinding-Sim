@@ -14,7 +14,7 @@ def simulate():
     goals = []
     moving = False
     total_time_taken = 0.0
-    wall_mode = False
+    wall_mode = True
     MAX_WAIT = 2
 
     running = True
@@ -22,7 +22,7 @@ def simulate():
         screen.fill(WHITE)
         draw_grid(screen, grid)
         draw_elements(screen, agents, goals)
-        draw_text(screen, total_time_taken, wall_mode)
+        draw_text(screen, total_time_taken, wall_mode, agents, goals)
 
         # Input handling
         for event in pygame.event.get():
