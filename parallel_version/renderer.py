@@ -5,9 +5,9 @@ def draw_grid(screen, grid):
     for x in range(GRID_SIZE_X):
         for y in range(GRID_SIZE_Y):
             rect = pygame.Rect(x * CELL_SIZE_X, y * CELL_SIZE_Y, CELL_SIZE_X, CELL_SIZE_Y)
-            color = BLACK if grid[x][y].wall else WHITE
+            color = WHITE if grid[x][y].wall else BLACK
             pygame.draw.rect(screen, color, rect)
-            pygame.draw.rect(screen, BLACK, rect, 1)
+            pygame.draw.rect(screen, GRAY, rect, 1)
 
 def draw_elements(screen, agents, goals):
     # Draw goals
@@ -42,22 +42,22 @@ def draw_text(screen, total_time_taken, wall_mode, font_small, font_medium):
         t = font_medium.render(f"Total Time: {total_time_taken:.7f} sec", True, BLACK)
         screen.blit(t, (10, HEIGHT + 10))
 
-    wall_text = font_small.render(f"Place/Remove: {wall_mode}", True, BLACK)
-    wall_control = font_small.render("Press T to Toggle", True, BLACK)
+    wall_text = font_small.render(f"[Left Click] Add Wall: {wall_mode}", True, BLACK)
+    wall_control = font_small.render("[T] Toggle Place/Remove", True, BLACK)
     name1 = font_small.render("Anush Bundel 2023BCS0005", True, BLACK)
     name2 = font_small.render("Ankush 2023BCS0131", True, BLACK)
 
     screen.blit(name1, (WIDTH - 380, HEIGHT + 5))
     screen.blit(name2, (WIDTH - 380, HEIGHT + 30))
-    screen.blit(wall_text, (WIDTH - 650, HEIGHT + 5))
-    screen.blit(wall_control, (WIDTH - 650, HEIGHT + 30))
+    screen.blit(wall_text, (WIDTH - 680, HEIGHT + 5))
+    screen.blit(wall_control, (WIDTH - 680, HEIGHT + 30))
 
-    run_info = font_small.render("Press Space to Run", True, BLACK)
-    reset_info = font_small.render("Press R to Reset", True, BLACK)
-    rightclick_info = font_small.render("Right Click - Agent", True, BLACK)
-    middle_info = font_small.render("Middle Click - Goal", True, BLACK)
+    run_info = font_small.render("[Space] Run Sim", True, BLACK)
+    reset_info = font_small.render("[R] Reset", True, BLACK)
+    rightclick_info = font_small.render("[Right Click] Add Agent", True, BLACK)
+    middle_info = font_small.render("[Middle Click] Add Goal", True, BLACK)
 
     screen.blit(run_info, (WIDTH - 900, HEIGHT + 5))
     screen.blit(reset_info, (WIDTH - 900, HEIGHT + 30))
-    screen.blit(rightclick_info, (WIDTH - 1150, HEIGHT + 5))
-    screen.blit(middle_info, (WIDTH - 1150, HEIGHT + 30))
+    screen.blit(rightclick_info, (WIDTH - 1200, HEIGHT + 5))
+    screen.blit(middle_info, (WIDTH - 1200, HEIGHT + 30))

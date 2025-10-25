@@ -5,7 +5,6 @@ from astar import a_star, reset_nodes
 from renderer import draw_grid, draw_elements, draw_text
 from node import Node
 
-
 def simulate():
     move_counter = 0
     grid = [[Node(x, y) for y in range(GRID_SIZE_Y)] for x in range(GRID_SIZE_X)]
@@ -16,7 +15,6 @@ def simulate():
     moving = False
     total_time_taken = 0.0
     wall_mode = False
-
     MAX_WAIT = 2
 
     running = True
@@ -26,12 +24,12 @@ def simulate():
         draw_elements(screen, agents, goals)
         draw_text(screen, total_time_taken, wall_mode)
 
-        # --- Input handling ---
+        # Input handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-            # Mouse: place walls, add agents, add goals
+            # Mouse inputs
             if pygame.mouse.get_pressed()[0]:
                 mx, my = pygame.mouse.get_pos()
                 gx, gy = mx // CELL_SIZE_X, my // CELL_SIZE_Y
@@ -53,7 +51,7 @@ def simulate():
                     if node not in goals:
                         goals.append(node)
 
-            # Keyboard: start simulation, toggle wall mode, reset
+            # Keyboard inputs
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     start_time = time.time()
@@ -109,11 +107,10 @@ def simulate():
                     moving = False
                     total_time_taken = 0.0
 
-        # --- Movement logic ---
+        # Movement logic
         if moving:
             move_counter += 1
             if move_counter >= MOVE_DELAY:
-                # Get positions of agents who have reached their goals (they won't move)
                 agents_at_goal = {tuple(agent["pos"]) for agent in agents if agent.get("reached_goal")}
                 occupied = {tuple(agent["pos"]) for agent in agents}
                 intentions = {}
@@ -133,7 +130,6 @@ def simulate():
                 reserved = set(agents_at_goal)  # Reserve positions of agents at their goals
 
                 for agent in agents:
-                    # Skip agents that have reached their goal
                     if agent.get("reached_goal"):
                         continue
                         
@@ -160,10 +156,8 @@ def simulate():
 
                     # Check if goal is blocked by another agent at goal
                     if goal and (goal.x, goal.y) in agents_at_goal and len(path) == 1:
-                        # Goal is permanently blocked, need to find alternative or wait
                         agent["wait"] += 1
                         if agent["wait"] >= MAX_WAIT:
-                            # Try to find adjacent free position near goal
                             agent["wait"] = 0
                             adjacent_positions = [
                                 (goal.x + dx, goal.y + dy)
@@ -219,7 +213,6 @@ def simulate():
                             if new_path:
                                 agent["path"] = new_path[:]
                             else:
-                                # If no path found, try waiting
                                 agent["wait"] = 0
                         
                         reserved.add(current_pos)
