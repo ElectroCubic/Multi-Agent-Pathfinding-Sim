@@ -40,8 +40,9 @@ def compute_best_path(args):
     # mark reached goals as walls in the local copy
     if reached_goals:
         for (rx, ry) in reached_goals:
-            if 0 <= rx < grid_w and 0 <= ry < grid_h:
+            if 0 <= rx < grid_w and 0 <= ry < grid_h and (rx, ry) not in goals:
                 base_walls[rx][ry] = True
+
 
     # For each agent in batch, find best goal
     for agent_pos in agent_batch:

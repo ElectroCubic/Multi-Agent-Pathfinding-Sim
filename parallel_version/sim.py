@@ -9,7 +9,7 @@ from renderer import draw_grid, draw_elements, draw_text
 from multiprocessing_worker import compute_best_path, init_worker
 
 # batch size for each worker task
-BATCH_SIZE = 8
+BATCH_SIZE = 4
 
 def _build_wall_map(grid):
     """Return a (GRID_SIZE_X, GRID_SIZE_Y) uint8 numpy array (1 = wall, 0 = free)."""
@@ -46,7 +46,7 @@ def run_simulation():
     moving = False
     wall_mode = False
     total_time_taken = 0.0
-    MAX_WAIT = 6
+    MAX_WAIT = 2
 
     # initial wall map and shared memory
     wall_map = _build_wall_map(grid)  # uint8
@@ -161,6 +161,7 @@ def run_simulation():
                     shm_arr = np.ndarray((GRID_SIZE_X, GRID_SIZE_Y), dtype=np.uint8, buffer=shm.buf)
                     base_walls = shm_arr.astype(bool, copy=True)
 
+                    stuck_agents = []  # collect for parallel replan
                     for a in agents:
                         path = a.get("path")
                         current_pos = tuple(a["pos"])
@@ -185,26 +186,7 @@ def run_simulation():
                         if next_pos in reserved or next_pos in occupied or next_pos in reached_goals or swap_conflict:
                             a["wait"] += 1
                             if a["wait"] >= MAX_WAIT:
-                                # dynamic replan to any free goal
-                                temp_walls = base_walls.copy()
-                                for ox, oy in (occupied | reached_goals):
-                                    if 0 <= ox < GRID_SIZE_X and 0 <= oy < GRID_SIZE_Y:
-                                        temp_walls[ox, oy] = True
-
-                                free_goals = [g for g in goals if (g.x, g.y) not in reached_goals]
-                                best = None
-                                best_len = float('inf')
-                                sx, sy = current_pos
-                                for g in free_goals:
-                                    p = astar(temp_walls, (sx, sy), (g.x, g.y), GRID_SIZE_X, GRID_SIZE_Y)
-                                    if p and len(p) < best_len:
-                                        best = p
-                                        best_len = len(p)
-
-                                if best:
-                                    a["path"] = [grid[x][y] for (x, y) in best]
-                                else:
-                                    a["path"] = None
+                                stuck_agents.append(a)
                                 a["wait"] = 0
                             reserved.add(current_pos)
                             continue
@@ -220,39 +202,31 @@ def run_simulation():
                         if len(path) == 0:
                             a["path"] = None
 
-                    free_goals = [g for g in goals if (g.x, g.y) not in reached_goals]
-                    if free_goals:
-                        # reuse base_walls we already computed
-                        temp_walls_for_replan = base_walls.copy()
-                        for ox, oy in (occupied | reached_goals):
-                            if 0 <= ox < GRID_SIZE_X and 0 <= oy < GRID_SIZE_Y:
-                                temp_walls_for_replan[ox, oy] = True
+                    # --- Parallel dynamic replanning for stuck agents ---
+                    if stuck_agents:
+                        free_goals = [g for g in goals if (g.x, g.y) not in reached_goals]
+                        if free_goals:
+                            agent_positions = [(a["pos"][0], a["pos"][1]) for a in stuck_agents]
 
-                        for a in agents:
-                            if a.get("path") is None:
-                                # skip agents already standing on a goal
-                                if a["pos"] in reached_goals:
-                                    continue
-                                sx, sy = a["pos"]
-                                # find any reachable free goal (prefer closest)
-                                best = None
-                                best_len = float('inf')
-                                sorted_goals = sorted(free_goals, key=lambda g: abs(g.x - sx) + abs(g.y - sy))
-                                for g in sorted_goals:
-                                    p = astar(temp_walls_for_replan, (sx, sy), (g.x, g.y), GRID_SIZE_X, GRID_SIZE_Y)
-                                    if p and len(p) < best_len:
-                                        best = p
-                                        best_len = len(p)
-                                        # early exit if ideal
-                                        if best_len == abs(g.x - sx) + abs(g.y - sy):
-                                            break
-                                if best:
-                                    a["path"] = [grid[x][y] for (x, y) in best]
-                                    # once assigned, mark its intended first step reserved to reduce collision
-                                    if a["path"]:
-                                        intended = (a["path"][0].x, a["path"][0].y)
-                                        reserved.add(intended)
-                                        occupied.add(intended)
+                            batches = []
+                            for i in range(0, len(agent_positions), BATCH_SIZE):
+                                batch = agent_positions[i:i + BATCH_SIZE]
+                                batches.append((batch, [(g.x, g.y) for g in free_goals],
+                                                GRID_SIZE_X, GRID_SIZE_Y, reached_goals))
+
+                            results_iter = pool.imap_unordered(compute_best_path, batches)
+                            all_results = []
+                            for res in results_iter:
+                                all_results.extend(res)
+
+                            # assign replanned paths back
+                            for agent_pos, path_coords in all_results:
+                                for a in stuck_agents:
+                                    if a["pos"] == agent_pos and path_coords:
+                                        a["path"] = [grid[x][y] for (x, y) in path_coords]
+                                        break
+
+                    move_counter = 0
 
                 # stop moving when all paths done
                 if all(a.get("path") is None for a in agents):
