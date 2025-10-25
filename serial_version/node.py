@@ -1,7 +1,10 @@
 class Node:
     def __init__(self, x, y):
-        self.x, self.y = x, y
-        self.parent, self.g, self.h = None, float('inf'), float('inf')
+        self.x = x
+        self.y = y
+        self.parent = None
+        self.g = float('inf')
+        self.h = float('inf')
         self.wall = False
 
     def __lt__(self, other):

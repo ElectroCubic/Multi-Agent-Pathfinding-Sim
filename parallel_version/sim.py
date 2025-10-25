@@ -9,7 +9,7 @@ from renderer import draw_grid, draw_elements, draw_text
 from multiprocessing_worker import compute_best_path, init_worker
 
 # batch size for each worker task
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 
 def _build_wall_map(grid):
     """Return a (GRID_SIZE_X, GRID_SIZE_Y) uint8 numpy array (1 = wall, 0 = free)."""
