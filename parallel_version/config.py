@@ -1,9 +1,7 @@
+# Constants
 
-# Timing
 CLOCK_RATE = 60
 MOVE_DELAY = 10
-
-# Grid
 WIDTH, HEIGHT = 1600, 720
 GRID_SIZE_X = 60
 GRID_SIZE_Y = 30

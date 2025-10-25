@@ -97,7 +97,7 @@ def run_simulation():
                         batches = []
                         for i in range(0, len(agent_positions), BATCH_SIZE):
                             batch = agent_positions[i:i+BATCH_SIZE]
-                            batches.append((batch, goals_data, GRID_SIZE_X, GRID_SIZE_Y, reached_goals))
+                            batches.append((batch, goals_data, reached_goals))
 
                         # time the collective pathfinding (pool tasks)
                         start_wall = time.time()
@@ -204,8 +204,7 @@ def run_simulation():
                         batches = []
                         for i in range(0, len(agent_positions), BATCH_SIZE):
                             batch = agent_positions[i:i + BATCH_SIZE]
-                            batches.append((batch, [(g.x, g.y) for g in free_goals],
-                                            GRID_SIZE_X, GRID_SIZE_Y, reached_goals))
+                            batches.append((batch, [(g.x, g.y) for g in free_goals], reached_goals))
 
                         results_iter = pool.imap_unordered(compute_best_path, batches)
                         all_results = []
@@ -220,6 +219,12 @@ def run_simulation():
                                     break
 
                 move_counter = 0
+            
+            if len(reached_goals) == len(goals):
+                for agent in agents:
+                    if agent["path"] is not None:
+                        agent["path"] = None
+                        agent["wait"] = 0
 
             # stop moving when all paths done
             if all(a.get("path") is None for a in agents):

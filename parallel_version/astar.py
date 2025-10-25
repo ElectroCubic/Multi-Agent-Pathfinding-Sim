@@ -1,10 +1,11 @@
 
 import heapq
+from config import GRID_SIZE_X, GRID_SIZE_Y
 
 def heuristic(a, b):
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-def astar(walls, start, goal, grid_w, grid_h):
+def astar(walls, start, goal):
     """
     walls: 2D array-like truthy for blocked cells. Indexing: walls[x][y]
     start/goal: (x, y)
@@ -36,13 +37,13 @@ def astar(walls, start, goal, grid_w, grid_h):
                 path.append(cur)
                 cur = came_from[cur]
             path.reverse()
-            return path  # list of (x,y)
+            return path
 
         closed.add(current)
         cx, cy = current
         for dx, dy in ((0,1),(1,0),(-1,0),(0,-1)):
             nx, ny = cx + dx, cy + dy
-            if not (0 <= nx < grid_w and 0 <= ny < grid_h):
+            if not (0 <= nx < GRID_SIZE_X and 0 <= ny < GRID_SIZE_Y):
                 continue
             if walls[nx][ny]:
                 continue

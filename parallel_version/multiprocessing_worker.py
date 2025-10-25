@@ -1,7 +1,6 @@
-# multiprocessing_worker.py
 import numpy as np
 from multiprocessing import shared_memory
-from astar import astar
+from astar import astar, GRID_SIZE_X, GRID_SIZE_Y
 
 _WALLS = None
 _SHM = None
@@ -26,12 +25,11 @@ def compute_best_path(args):
     args:
       - agent_batch: list of (ax, ay) tuples
       - goals: list of (gx, gy)
-      - grid_w, grid_h: ints
       - reached_goals: set of (x,y) that should be treated as walls for planning
     returns:
       list of (agent_pos, path_tuples or None)
     """
-    agent_batch, goals, grid_w, grid_h, reached_goals = args
+    agent_batch, goals, reached_goals = args
 
     results = []
     # make a local boolean copy once per batch and apply reached_goals
@@ -40,7 +38,7 @@ def compute_best_path(args):
     # mark reached goals as walls in the local copy
     if reached_goals:
         for (rx, ry) in reached_goals:
-            if 0 <= rx < grid_w and 0 <= ry < grid_h and (rx, ry) not in goals:
+            if 0 <= rx < GRID_SIZE_X and 0 <= ry < GRID_SIZE_Y and (rx, ry) not in goals:
                 base_walls[rx][ry] = True
 
 
@@ -59,7 +57,7 @@ def compute_best_path(args):
             if (gx, gy) in reached_goals:
                 continue
 
-            path = astar(base_walls, (ax, ay), (gx, gy), grid_w, grid_h)
+            path = astar(base_walls, (ax, ay), (gx, gy))
             if path:
                 if len(path) < best_len:
                     best_len = len(path)
