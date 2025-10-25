@@ -3,7 +3,7 @@ An interactive multi-agent pathfinding simulator in Python using Pygame, and mul
 
 ## Key Features:
 - Agents can move freely on a 2D grid space.
-- Dynamically add/remove agents, goals and obstacles.
+- Place agents, goals and obstacles with easy mouse controls.
 - Agents can dynamically replan their paths if blocked by other agents.
 - Measure time performance of A* path calculations.
 
