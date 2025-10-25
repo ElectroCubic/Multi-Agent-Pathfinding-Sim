@@ -86,6 +86,7 @@ def run_simulation():
                     wall_map = _build_wall_map(grid)
                     _write_to_shm(shm, wall_map)
                 if event.key == pygame.K_SPACE and agents and goals:
+                    start_time = time.time()
                     # prepare inputs
                     goals_data = [(g.x, g.y) for g in goals]
                     reached_goals = {(g.x, g.y) for g in goals if any(a["pos"] == (g.x, g.y) for a in agents)}
@@ -98,16 +99,14 @@ def run_simulation():
                         for i in range(0, len(agent_positions), BATCH_SIZE):
                             batch = agent_positions[i:i+BATCH_SIZE]
                             batches.append((batch, goals_data, reached_goals))
-
-                        # time the collective pathfinding (pool tasks)
-                        start_wall = time.time()
+                        
                         results_iter = pool.imap_unordered(compute_best_path, batches)
                         # collect and flatten results
                         all_results = []
                         for res in results_iter:
                             # res is list of (agent_pos, path_tuples) per batch
                             all_results.extend(res)
-                        total_time_taken = time.time() - start_wall
+                        
 
                         # assign results to agents (paths are tuples -> convert to Node)
                         for agent_pos, path_coords in all_results:
@@ -120,6 +119,7 @@ def run_simulation():
                                         a["path"] = path_nodes
                                         break
                     moving = True
+                    total_time_taken = time.time() - start_time
 
         # mouse handling
         if pygame.mouse.get_pressed()[0]:

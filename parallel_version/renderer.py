@@ -39,7 +39,7 @@ def draw_elements(screen, agents, goals):
 
 def draw_text(screen, total_time_taken, wall_mode, font_small, font_medium):
     if total_time_taken is not None:
-        t = font_medium.render(f"Total Time: {total_time_taken:.5f} sec", True, BLACK)
+        t = font_medium.render(f"Total Time: {total_time_taken:.7f} sec", True, BLACK)
         screen.blit(t, (10, HEIGHT + 10))
 
     wall_text = font_small.render(f"Place/Remove: {wall_mode}", True, BLACK)

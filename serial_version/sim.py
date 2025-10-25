@@ -14,7 +14,7 @@ def simulate():
     agents = []
     goals = []
     moving = False
-    total_time_taken = None
+    total_time_taken = 0.0
     wall_mode = False
 
     MAX_WAIT = 2
@@ -107,7 +107,7 @@ def simulate():
                     agents.clear()
                     goals.clear()
                     moving = False
-                    total_time_taken = None
+                    total_time_taken = 0.0
 
         # --- Movement logic ---
         if moving:
