@@ -1,6 +1,7 @@
 import pygame
 from pygame._sdl2 import Window
 
+# Constants
 CLOCK_RATE = 60
 WIDTH, HEIGHT = 1600, 720
 GRID_SIZE_X = 60
@@ -8,7 +9,9 @@ GRID_SIZE_Y = 30
 CELL_SIZE_X = WIDTH // GRID_SIZE_X
 CELL_SIZE_Y = HEIGHT // GRID_SIZE_Y
 MOVE_DELAY = 10
+MAX_WAIT = 2
 
+# Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 BLUE = (0, 0, 255)

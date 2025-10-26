@@ -1,7 +1,7 @@
 # Constants
-
 CLOCK_RATE = 60
-MOVE_DELAY = 10
+MOVE_DELAY = 10  # frames
+MAX_WAIT = 2   # frames
 WIDTH, HEIGHT = 1600, 720
 GRID_SIZE_X = 60
 GRID_SIZE_Y = 30

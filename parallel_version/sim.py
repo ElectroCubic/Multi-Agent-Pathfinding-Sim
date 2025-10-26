@@ -45,7 +45,6 @@ def run_simulation():
     wall_mode = True
     total_time_taken = 0.0
     move_counter = 0
-    MAX_WAIT = 2
 
     # initial wall map and shared memory
     wall_map = _build_wall_map(grid)  # uint8

@@ -62,7 +62,7 @@ def draw_text(screen, total_time_taken, wall_mode, font_small, font_medium, agen
         f"Waiting: {waiting_agents}"
     ]
 
-    x_offset = WIDTH - 1210
+    x_offset = WIDTH - 1150
     y_offset = HEIGHT + 23
     spacing = 130
     for i, txt in enumerate(stats_texts):
@@ -71,4 +71,4 @@ def draw_text(screen, total_time_taken, wall_mode, font_small, font_medium, agen
 
     screen.blit(name1, (WIDTH - 380, HEIGHT + 10))
     screen.blit(name2, (WIDTH - 380, HEIGHT + 35))
-    screen.blit(wall_surface, (WIDTH - 680, HEIGHT + 23))
+    screen.blit(wall_surface, (WIDTH - 620, HEIGHT + 23))

@@ -29,7 +29,7 @@ def draw_elements(screen, agents, goals):
     for agent in agents:
         px, py = agent["pos"]
         if any(px == g.x and py == g.y for g in goals):
-            color = (128, 128, 128)
+            color = GRAY
         elif agent.get("wait", 0) > 0:
             color = YELLOW
         else:
@@ -63,7 +63,7 @@ def draw_text(screen, total_time_taken, wall_mode, agents, goals):
         f"Waiting: {waiting_agents}"
     ]
 
-    x_offset = WIDTH - 1210
+    x_offset = WIDTH - 1150
     y_offset = HEIGHT + 23
     spacing = 130
     for i, txt in enumerate(stats_texts):
@@ -72,4 +72,4 @@ def draw_text(screen, total_time_taken, wall_mode, agents, goals):
 
     screen.blit(name1, (WIDTH - 380, HEIGHT + 10))
     screen.blit(name2, (WIDTH - 380, HEIGHT + 35))
-    screen.blit(wall_surface, (WIDTH - 680, HEIGHT + 23))
+    screen.blit(wall_surface, (WIDTH - 620, HEIGHT + 23))

@@ -13,7 +13,6 @@ def simulate():
     moving = False
     total_time_taken = 0.0
     wall_mode = True
-    MAX_WAIT = 2
 
     running = True
     while running:

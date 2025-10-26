@@ -1,15 +1,14 @@
-
 import heapq
 from config import GRID_SIZE_X, GRID_SIZE_Y
 
 def heuristic(a, b):
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])  # Manhattan Distance
 
 def astar(walls, start, goal):
     """
     walls: 2D array. Indexing: walls[x][y]
     start/goal: (x, y)
-    returns: list of (x,y) from start's next step ... goal
+    returns: list of (x,y) from start's next step till goal
     """
     if start == goal:
         return []

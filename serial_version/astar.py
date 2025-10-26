@@ -2,8 +2,7 @@ import heapq
 from config import GRID_SIZE_X, GRID_SIZE_Y
 
 def heuristic(a, b):
-    """Manhattan distance heuristic."""
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+    return abs(a[0] - b[0]) + abs(a[1] - b[1]) # Manhattan Distance
 
 def astar(walls, start, goal, avoid_positions=None):
     """
