@@ -39,12 +39,14 @@ def draw_elements(screen, agents, goals):
 
 def draw_text(screen, total_time_taken, wall_mode, font_small, font_medium, agents, goals):
     if total_time_taken is not None:
-        text_surface = font_medium.render(f"Total Time: {total_time_taken:.7f} sec", True, BLACK)
+        text_surface = font_medium.render(f"Total Time: {total_time_taken:.8f} sec", True, BLACK)
         screen.blit(text_surface, (10, HEIGHT + 20))
 
-    wall_text = f"[Left Click] Add Wall: {wall_mode}"
+    if wall_mode:
+        wall_text = f"Wall Mode: Place"
+    else:
+        wall_text = f"Wall Mode: Remove"
     wall_surface = font_small.render(wall_text, True, BLACK)
-    toggle_surface = font_small.render("[T] Toggle Place/Remove", True, BLACK)
     name1 = font_small.render("Anush Bundel 2023BCS0005", True, BLACK)
     name2 = font_small.render("Ankush 2023BCS0131", True, BLACK)
 
@@ -67,7 +69,6 @@ def draw_text(screen, total_time_taken, wall_mode, font_small, font_medium, agen
         stat_surface = font_small.render(txt, True, BLACK)
         screen.blit(stat_surface, (x_offset + i*spacing, y_offset))
 
-    screen.blit(name1, (WIDTH - 380, HEIGHT + 5))
-    screen.blit(name2, (WIDTH - 380, HEIGHT + 30))
-    screen.blit(wall_surface, (WIDTH - 680, HEIGHT + 5))
-    screen.blit(toggle_surface, (WIDTH - 680, HEIGHT + 30))
+    screen.blit(name1, (WIDTH - 380, HEIGHT + 10))
+    screen.blit(name2, (WIDTH - 380, HEIGHT + 35))
+    screen.blit(wall_surface, (WIDTH - 680, HEIGHT + 23))

@@ -7,9 +7,9 @@ def heuristic(a, b):
 
 def astar(walls, start, goal):
     """
-    walls: 2D array-like truthy for blocked cells. Indexing: walls[x][y]
+    walls: 2D array. Indexing: walls[x][y]
     start/goal: (x, y)
-    returns: list of (x,y) from start's next step ... goal (does NOT include start)
+    returns: list of (x,y) from start's next step ... goal
     """
     if start == goal:
         return []
@@ -20,9 +20,9 @@ def astar(walls, start, goal):
         return []
 
     open_heap = []
-    gscore = {start: 0}
-    fscore = {start: heuristic(start, goal)}
-    heapq.heappush(open_heap, (fscore[start], start))
+    g_val = {start: 0}
+    f_val = {start: heuristic(start, goal)}
+    heapq.heappush(open_heap, (f_val[start], start))
     came_from = {}
     closed = set()
 
@@ -48,11 +48,10 @@ def astar(walls, start, goal):
             if walls[nx][ny]:
                 continue
             neigh = (nx, ny)
-            tentative_g = gscore[current] + 1
-            if tentative_g < gscore.get(neigh, float('inf')):
+            tentative_g = g_val[current] + 1
+            if tentative_g < g_val.get(neigh, float('inf')):
                 came_from[neigh] = current
-                gscore[neigh] = tentative_g
-                f = tentative_g + heuristic(neigh, goal)
-                heapq.heappush(open_heap, (f, neigh))
+                g_val[neigh] = tentative_g
+                heapq.heappush(open_heap, (tentative_g + heuristic(neigh, goal), neigh))
 
     return []  # no path found
