@@ -11,4 +11,4 @@ class Node:
         return (self.x, self.y) < (other.x, other.y)
 
     def __repr__(self):
-        return f"Node({self.x},{self.y})"
+        return f"Node({self.x}, {self.y})"

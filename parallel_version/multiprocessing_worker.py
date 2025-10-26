@@ -17,7 +17,6 @@ def init_worker(shm_name, shape):
     # walls stored as uint8 (0/1) in shared memory
     grid_w, grid_h = shape
     arr = np.ndarray((grid_w, grid_h), dtype=np.uint8, buffer=_SHM.buf)
-    # Use a boolean view for convenience
     _WALLS = arr.view(dtype=np.uint8)
 
 def compute_best_path(args):
