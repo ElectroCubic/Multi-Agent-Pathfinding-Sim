@@ -98,10 +98,9 @@ def run_simulation():
                             batches.append((batch, goals_data, reached_goals))
                         
                         results_iter = pool.imap_unordered(compute_best_path, batches)
-                        # collect and flatten results
+                        # collect results
                         all_results = []
                         for res in results_iter:
-                            # res is list of (agent_pos, path_tuples) per batch
                             all_results.extend(res)
                         
 
@@ -109,7 +108,6 @@ def run_simulation():
                         for agent_pos, path_coords in all_results:
                             if path_coords:
                                 ax, ay = agent_pos
-                                # find the agent instance whose node is (ax,ay) and assign
                                 for a in agents:
                                     if a["node"].x == ax and a["node"].y == ay:
                                         path_nodes = [grid[x][y] for (x, y) in path_coords]
@@ -149,9 +147,18 @@ def run_simulation():
             if move_counter >= MOVE_DELAY:
                 occupied = {tuple(a["pos"]) for a in agents}
                 reserved = set()
-                reached_goals = {(g.x, g.y) for g in goals if any(a["pos"] == (g.x, g.y) for a in agents)}
+                reached_goals = set()
 
-                stuck_agents = []  # collect for parallel replan
+                for goal in goals:
+                    goal_position = (goal.x, goal.y)
+
+                    for agent in agents:
+                        if agent["pos"] == goal_position:
+                            reached_goals.add(goal_position)
+                            break  # Stop checking other agents once a match is found
+
+
+                stuck_agents = []  # collect agents for parallel replanning
                 for a in agents:
                     path = a.get("path")
                     current_pos = tuple(a["pos"])
@@ -173,13 +180,20 @@ def run_simulation():
                         for other in agents
                     )
 
-                    if next_pos in reserved or next_pos in occupied or next_pos in reached_goals or swap_conflict:
+                    if (next_pos in reserved or 
+                        next_pos in occupied or 
+                        next_pos in reached_goals or 
+                        swap_conflict):
+                        
                         a["wait"] += 1
+
                         if a["wait"] >= MAX_WAIT:
                             stuck_agents.append(a)
                             a["wait"] = 0
+
                         reserved.add(current_pos)
                         continue
+
 
                     # Normal move
                     reserved.add(next_pos)
@@ -194,9 +208,18 @@ def run_simulation():
 
                 # --- Parallel dynamic replanning for stuck agents ---
                 if stuck_agents:
-                    free_goals = [g for g in goals if (g.x, g.y) not in reached_goals]
+                    # Get goals that haven't been reached yet
+                    free_goals = []
+                    for g in goals:
+                        if (g.x, g.y) not in reached_goals:
+                            free_goals.append(g)
+
                     if free_goals:
-                        agent_positions = [(a["pos"][0], a["pos"][1]) for a in stuck_agents]
+                        # Get positions of all stuck agents
+                        agent_positions = []
+                        for a in stuck_agents:
+                            agent_positions.append((a["pos"][0], a["pos"][1]))
+
 
                         batches = []
                         for i in range(0, len(agent_positions), BATCH_SIZE):
@@ -212,8 +235,10 @@ def run_simulation():
                         for agent_pos, path_coords in all_results:
                             for a in stuck_agents:
                                 if a["pos"] == agent_pos and path_coords:
-                                    a["path"] = [grid[x][y] for (x, y) in path_coords]
-                                    break
+                                   a["path"] = []
+                                   for (x, y) in path_coords:
+                                        a["path"].append(grid[x][y])
+                                   break
 
                 move_counter = 0
             
@@ -224,8 +249,16 @@ def run_simulation():
                         agent["wait"] = 0
 
             # stop moving when all paths done
-            if all(a.get("path") is None for a in agents):
-                moving = False
+            all_paths_none = True
+
+            for a in agents:
+                    if a.get("path") is not None:
+                        all_paths_none = False
+                        break
+
+            if all_paths_none:
+                    moving = False
+
 
         pygame.display.flip()
         clock.tick(CLOCK_RATE)
