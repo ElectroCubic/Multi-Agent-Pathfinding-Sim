@@ -46,7 +46,41 @@ cd Multi-Agent-Pathfinding-Sim
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Backup method (run these commands)
+pip install pygame
+pip install numpy
 ```
+
+## Project Structure:
+Serial_version contains –
+- astar.py
+- config.py
+- main.py
+- node.py
+- renderer.py
+- sim.py
+
+Parallel_version contains –
+- astar.py
+- config.py
+- main.py
+- multi_processing_worker.py
+- node.py
+- renderer.py
+- sim.py
+
+## How To Run:
+naviaget to the root folder of the project and type in the terminal:
+For Serial Version:
+```
+python serial_version/main.py
+```
+For Parallel Version:
+```
+python parallel_version/main.py
+```
+
 ## Simulator Controls:
 - Press **T to toggle Wall Mode**. Then use **Left Click** to place/remove walls.
 - Press **Right Mouse Button** to place Agents.
