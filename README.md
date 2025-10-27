@@ -71,7 +71,7 @@ Parallel_version contains –
 - sim.py
 
 ## How To Run:
-naviaget to the root folder of the project and type in the terminal:
+Navigate to the root folder of the project and open the terminal:
 For Serial Version:
 ```
 python serial_version/main.py
@@ -81,6 +81,9 @@ For Parallel Version:
 python parallel_version/main.py
 ```
 
+Both commands will open a Pygame window where you can see the version name currently running in the Title bar (Serial/Parallel).
+The simulation results can be reproduced by just placing the exact same positions of the elements and running them manually. Timings of the result may vary depending upon system configuration.
+
 ## Simulator Controls:
 - Press **T to toggle Wall Mode**. Then use **Left Click** to place/remove walls.
 - Press **Right Mouse Button** to place Agents.
@@ -89,5 +92,5 @@ python parallel_version/main.py
 - Press **R to Reset** the agents and goals.
 
 ## Contributors: 
-- Anush Bundel - 2023BCS0005
-- Ankush Sharma - 2023BCS0131
+- ### Anush Bundel - 2023BCS0005
+- ### Ankush Sharma - 2023BCS0131
