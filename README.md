@@ -12,7 +12,7 @@ An interactive multi-agent pathfinding simulator in Python using Pygame, and mul
 8) [Contributors](#Contributors)
 
 ## Key Features:
-- A*-based pathfinding for each agent
+- A* based pathfinding for each agent
 - Parallelized execution using Python’s multiprocessing
 - Configurable grid size and number of agents
 - Agents move orthogonally (4-ways) in a 2D grid space.
@@ -23,7 +23,7 @@ An interactive multi-agent pathfinding simulator in Python using Pygame, and mul
 ## Pathfinding Algorithm:
 ### A* Algorithm
 
-Each agent computes the shortest path to its goal using the A* algorithm, defined by: <br>
+Each agent computes the shortest path to its goal using the A* algorithm. <br>
 - Heuristic used: Manhattan distance <br>
 - Cost Function: f(n) = g(n) + h(n) <br>
 - Neighbors: 4-directional (up, down, left, right) <br>
@@ -38,18 +38,13 @@ Each agent computes the shortest path to its goal using the A* algorithm, define
   - Recommended: Quad-core or higher (e.g., Intel Core i5/i7, AMD Ryzen 5/7)
 
 ## Installation:
-```
-python
+```console
 # Clone the repository
 git clone https://github.com/ElectroCubic/Multi-Agent-Pathfinding-Sim.git
 cd Multi-Agent-Pathfinding-Sim
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Backup method (run these commands)
-pip install pygame
-pip install numpy
 ```
 
 ## Project Structure:
@@ -72,12 +67,13 @@ Parallel_version contains –
 
 ## How To Run:
 Navigate to the root folder of the project and open the terminal:<br>
+
 For Serial Version:
-```
+```console
 python serial_version/main.py
 ```
 For Parallel Version:
-```
+```console
 python parallel_version/main.py
 ```
 
