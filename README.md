@@ -71,7 +71,7 @@ Parallel_version contains –
 - sim.py
 
 ## How To Run:
-Navigate to the root folder of the project and open the terminal:
+Navigate to the root folder of the project and open the terminal:<br>
 For Serial Version:
 ```
 python serial_version/main.py
